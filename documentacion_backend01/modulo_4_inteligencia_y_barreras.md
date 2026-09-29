@@ -63,16 +63,29 @@ ia_calendario = LLM(model=modelo_ia, api_key=os.getenv("GROQ_API_KEY_AMIGO2"), t
 
 ---
 
-## 🧪 Pruebas y Validación
+## 🧪 Pruebas y Validación Automatizada
 
-| Prueba | Método | Resultado |
-| :--- | :--- | :---: |
-| **Sintaxis Python** | `python -m py_compile bot_crewai.py` | ✅ Exitoso (código 0) |
-| **Integridad Git** | Revisión con `git diff` | ✅ Correcto |
-| **Configuración LLM** | Verificación de parámetro `temperature=0.0` | ✅ Confirmado |
+Se implementó una suite completa de pruebas en [`tests/test_modulo_4.py`](../tests/test_modulo_4.py) utilizando el framework estándar `unittest` con mocks para validar las barreras sin consumir tokens de APIs externas ni requerir Moodle en vivo:
+
+### Comando de Ejecución
+```bash
+python -m unittest tests/test_modulo_4.py -v
+```
+
+### Resultados de la Suite (7/7 Pruebas Superadas)
+| Categoría | Caso de Prueba | Descripción | Resultado |
+| :--- | :--- | :--- | :---: |
+| **Unitario** | `test_temperatura_estricta_cero` | Verifica `temperature == 0.0` en los 3 LLMs | ✅ PASÓ |
+| **Unitario** | `test_prompt_agente_archivos_anti_alucinacion` | Verifica barrera y cero tolerancia a inventar | ✅ PASÓ |
+| **Unitario** | `test_prompt_agente_calendario_estricto` | Verifica búsqueda sin fechas supuestas | ✅ PASÓ |
+| **Unitario** | `test_prompt_agente_orquestador_grounding` | Verifica restricción a datos oficiales de Moodle | ✅ PASÓ |
+| **Mocks Pipeline** | `test_flujo_archivos_inyecta_barreras_y_agente` | Pipeline asigna tarea estricta a `agente_archivos` | ✅ PASÓ |
+| **Mocks Pipeline** | `test_flujo_calendario_inyecta_reglas_estrictas` | Pipeline asigna tarea estricta a `agente_calendario` | ✅ PASÓ |
+| **Mocks Pipeline** | `test_flujo_charla_sin_materia_no_llama_backoffice` | Charla informal no activa backoffice innecesariamente | ✅ PASÓ |
 
 ---
 
 ## 📌 Historial de Commits
 
 - Commit: `30db606` - `feat(modulo-4): configurar temperatura a 0 y system prompts anti-alucinaciones`
+- Commit: `8282746` - `docs(backend01): estructurar carpeta de documentacion y agregar resumen del modulo 4`

@@ -1,4 +1,9 @@
 import os
+import sys
+
+# Compatibilidad de codificación UTF-8 para consola en Windows
+if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 from dotenv import load_dotenv
 from crewai import Agent, Task, Crew, LLM
 
