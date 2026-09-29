@@ -16,6 +16,7 @@ _crewai_cache.mark_cache_breakpoint = lambda msg: msg
 # =================================================================
 from skills.calendario import tool_calendario
 from skills.archivos import tool_archivos
+from skills.utils import verificar_acceso_materia
 
 load_dotenv()
 historial_chats = {}
@@ -98,6 +99,31 @@ def consultar_oficina(mensaje_alumno, id_usuario=4501):
     accion = accion.strip().upper()
     materia = materia.strip()
     if materia.lower() in ["ninguna", "ninguno", "no menciona", ""]: accion = "CHARLA"
+
+    # =================================================================
+    # BARRERA DE PERMISOS: VALIDACIÓN DE MATRÍCULA EN MOODLE
+    # =================================================================
+    if accion in ["CALENDARIO", "ARCHIVOS"]:
+        tiene_acceso, id_materia, nombre_oficial, materia_existe = verificar_acceso_materia(id_usuario, materia)
+        if not tiene_acceso:
+            if materia_existe:
+                respuesta_seguridad = (
+                    f"Acceso denegado: No tienes acceso a la materia '{materia}' porque no te encuentras "
+                    f"matriculado en ella. Si crees que se trata de un error, por favor contacta "
+                    f"a tu profesor o al departamento de alumnos."
+                )
+            else:
+                respuesta_seguridad = (
+                    f"No encontré la materia '{materia}' en la plataforma Moodle. "
+                    f"Por favor verifica el nombre de la asignatura."
+                )
+            
+            historial_chats[id_usuario].append(f"Alumno: {mensaje_alumno}")
+            historial_chats[id_usuario].append(f"Tú: {respuesta_seguridad}")
+            return respuesta_seguridad
+
+        if nombre_oficial:
+            materia = nombre_oficial
 
     # PASO 2: PIPELINE DE TRABAJO
     tareas_finales = []

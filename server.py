@@ -31,8 +31,8 @@ def chat_endpoint(request: ChatRequest):
     print(f"==============================================\n")
     
     try:
-        # AQUÍ OCURRE LA MAGIA: Le pasamos el mensaje a tus agentes
-        resultado_agentes = consultar_oficina(request.message)
+        # AQUÍ OCURRE LA MAGIA: Le pasamos el mensaje y el usuario autenticado a tus agentes
+        resultado_agentes = consultar_oficina(request.message, id_usuario=request.user_id)
         
         # CrewAI a veces devuelve un objeto complejo, lo convertimos a texto por seguridad
         bot_response = str(resultado_agentes) 

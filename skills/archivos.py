@@ -20,13 +20,25 @@ def tool_archivos(nombre_materia: str, tema_a_buscar: str) -> str:
     
     if type(datos) is list:
         for seccion in datos:
+            # BARRERA DE PERMISOS: Omitir secciones ocultas para el estudiante
+            if not seccion.get('uservisible', True) or seccion.get('visible', 1) == 0:
+                continue
+
             for modulo in seccion.get('modules', []):
+                # BARRERA DE PERMISOS: Omitir recursos o módulos ocultos
+                if not modulo.get('uservisible', True) or modulo.get('visible', 1) == 0:
+                    continue
+
                 for contenido in modulo.get('contents', []):
                     if 'fileurl' in contenido: 
                         url_archivo, nombre_archivo = contenido['fileurl'], contenido['filename']
                         break
+                if url_archivo:
+                    break
+            if url_archivo:
+                break
     
-    if not url_archivo: return f"No hay archivos en la materia {nombre_materia}."
+    if not url_archivo: return f"No hay archivos o contenidos visibles en la materia {nombre_materia}."
     
     ruta = os.path.join(carpeta_principal, "BOT_" + nombre_archivo)
     with open(ruta, 'wb') as f: f.write(requests.get(f"{url_archivo}&token={TOKEN_LOCAL}").content)
