@@ -1,0 +1,26 @@
+{
+  "moodle": {
+    "url": "https://moodle.tu-institucion.edu.ar",
+    "token": "PONER_TU_TOKEN_AQUI",
+    "timeout_seconds": 5
+  },
+  "llm": {
+    "provider": "ollama",
+    "model_name": "llama3",
+    "base_url": "http://localhost:11434"
+  },
+  "skills": {
+    "archivos": {
+      "enabled": true
+    },
+    "calendario": {
+      "enabled": true
+    },
+    "utils": {
+      "enabled": true
+    }
+  },
+  "app": {
+    "debug": true
+  }
+}
