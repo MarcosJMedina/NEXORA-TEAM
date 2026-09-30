@@ -1,0 +1,18 @@
+# Cache de Python
+__pycache__/
+*.pyc
+
+# Entornos virtuales
+venv/
+.venv/
+env/
+
+# Base de datos vectorial (cada dev debe generarla localmente)
+chroma_db/
+
+# Ignorar PDFs pesados pero mantener la carpeta creada
+moodles_pdfs/*
+!moodles_pdfs/.gitkeep
+
+# Archivos de configuración sensible / llaves API si usan .env
+.env
