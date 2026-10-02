@@ -1,0 +1,10 @@
+crewai
+crewai-tools
+groq
+fastapi
+uvicorn
+python-dotenv
+requests
+python-docx
+pypdf
+litellm

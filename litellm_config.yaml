@@ -1,0 +1,29 @@
+model_list:
+  - model_name: modelo-universidad
+    litellm_params:
+      model: groq/openai/gpt-oss-20b
+      api_key: os.environ/GROQ_API_KEY_ERICK
+      
+  - model_name: modelo-universidad
+    litellm_params:
+      model: groq/openai/gpt-oss-20b
+      api_key: os.environ/GROQ_API_KEY_AMIGO1
+      
+  - model_name: modelo-universidad
+    litellm_params:
+      model: groq/openai/gpt-oss-20b
+      api_key: os.environ/GROQ_API_KEY_AMIGO2
+
+  - model_name: modelo-universidad
+    litellm_params:
+      model: groq/openai/gpt-oss-20b
+      api_key: os.environ/GROQ_API_KEY_RESPALDO1
+      
+  - model_name: modelo-universidad
+    litellm_params:
+      model: groq/openai/gpt-oss-20b
+      api_key: os.environ/GROQ_API_KEY_RESPALDO2
+
+router_settings:
+  routing_strategy: least-busy
+  num_retries: 5
