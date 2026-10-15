@@ -84,7 +84,7 @@ def chat_endpoint(request: ChatRequest):
     
     # 2. PASO DE INTELIGENCIA
     try:
-        resultado_agentes = consultar_oficina(request.message, request.user_id)
+        resultado_agentes = consultar_oficina(request.message, id_usuario=request.user_id)
         bot_response = str(resultado_agentes) 
     except Exception as e:
         print(f"❌ [ERROR EN AGENTES]: {e}")

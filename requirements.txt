@@ -8,3 +8,5 @@ requests
 python-docx
 pypdf
 litellm
+chromadb
+sentence-transformers
