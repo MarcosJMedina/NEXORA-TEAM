@@ -30,3 +30,8 @@ Una vez que tengas Docker abierto y tu archivo `.env` creado, sigue estos pasos:
 Una vez hecho todo eso entra a este link para entrar al moodle: https://rocker-hungrily-edging.ngrok-free.dev
 
 El moodle esta en la PC de erick, se esta comportiendo online, por eso no es necesario que usted haga nada en el pero si podra configurarlo desde dentro del mismo.
+
+
+Una vez terminen todo, no cierren el CMD, deben poner este comando para apagar todo, sino el docker seguira corriendo a pesar de que cierren todo:
+
+docker-compose down
