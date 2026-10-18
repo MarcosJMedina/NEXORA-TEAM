@@ -1,0 +1,169 @@
+/* Estilos generales de prueba */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f6f9;
+    margin: 0;
+    padding: 20px;
+}
+.moodle-mock-bg {
+    color: #333;
+    border: 1px dashed #ccc;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+}
+
+/* BURBUJA FLOTANTE */
+.chat-bubble {
+    position: fixed !important;
+    bottom: 25px !important;
+    right: 25px !important;
+    width: 60px !important;
+    height: 60px !important;
+    background-color: #0073b1 !important; /* Azul institucional */
+    color: white !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    font-size: 28px !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    z-index: 2147483647 !important;
+    user-select: none !important;
+}
+.chat-bubble:hover {
+    transform: scale(1.08) !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4) !important;
+}
+
+/* VENTANA DE CHAT */
+.chat-window {
+    position: fixed !important;
+    bottom: 95px !important;
+    right: 25px !important;
+    width: 360px !important;
+    max-width: calc(100vw - 50px) !important;
+    height: 480px !important;
+    max-height: calc(100vh - 120px) !important;
+    background-color: white !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.25) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    z-index: 2147483647 !important;
+    transition: all 0.25s ease !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+.chat-window.hidden,
+.hidden {
+    display: none !important;
+}
+
+/* Encabezado */
+.chat-header {
+    background-color: #0073b1;
+    color: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.chat-header h3 { margin: 0; font-size: 16px; }
+.close-btn { background: none; border: none; color: white; cursor: pointer; font-size: 14px; }
+
+/* Zona de mensajes */
+.chat-messages {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    background-color: #f9fbfd;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Globos de texto */
+.message {
+    padding: 10px 14px;
+    border-radius: 15px;
+    max-width: 75%;
+    font-size: 14px;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+.bot-message {
+    background-color: #eef2f5;
+    color: #333;
+    align-self: flex-start;
+    border-top-left-radius: 2px;
+}
+.user-message {
+    background-color: #0073b1;
+    color: white;
+    align-self: flex-end;
+    border-top-right-radius: 2px;
+}
+
+/* Barra de escritura */
+.chat-input-area {
+    padding: 10px;
+    border-top: 1px solid #eee;
+    display: flex;
+    gap: 8px;
+    background: white;
+}
+.chat-input-area input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    outline: none;
+    font-size: 14px;
+}
+.chat-input-area button {
+    background-color: #0073b1;
+    color: white;
+    border: none;
+    padding: 0 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+}
+.chat-input-area button:hover { background-color: #005988; }
+
+/* Animación de los tres puntitos */
+.typing-indicator span {
+    height: 8px; width: 8px; background: #555; display: inline-block; border-radius: 50%;
+    animation: bounce 1.3s infinite both; margin: 0 1px;
+}
+.typing-indicator span:nth-child(2) { animation-delay: .2s; }
+.typing-indicator span:nth-child(3) { animation-delay: .4s; }
+@keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+/* Estilos para el botón de expandir en la cabecera */
+.chat-btn-toggle {
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.chat-btn-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Estado expandido del contenedor del chat (ocupa la mitad de la pantalla) */
+#chat-widget-container.expanded {
+    width: 50vw !important;
+    height: 80vh !important;
+    max-width: 900px;
+    bottom: 20px !important;
+    right: 20px !important;
+    transition: all 0.3s ease;
+}

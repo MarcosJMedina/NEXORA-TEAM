@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  # TUPPER 1: EL GUARDIA DE TRÁFICO (PROXY)
+  litellm-proxy:
+    image: ghcr.io/berriai/litellm:main-latest
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./litellm_config.yaml:/app/config.yaml
+    command: [ "--config", "/app/config.yaml", "--port", "4000" ]
+    env_file:
+      - .env
+
+  # TUPPER 2: TU CÓDIGO DE PYTHON
+  bot-moodle:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - ./chroma_data:/app/chroma_data
+    command: ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "3000", "--reload"]
+    depends_on:
+      - litellm-proxy
