@@ -21,6 +21,7 @@ Este espacio recopila bitácoras, especificaciones técnicas y resúmenes de imp
 | :--- | :--- | :---: | :--- |
 | **Módulo 4: Inteligencia y Barreras (Anti-Alucinaciones)** | `bot_crewai.py` | ✅ Completado | [Ver Documentación](./modulo_4_inteligencia_y_barreras.md) |
 | **Control de Permisos y Contenidos Ocultos en Moodle** | `skills/utils.py`, `skills/archivos.py`, `bot_crewai.py`, `server.py` | ✅ Completado | [Ver Documentación](./modulo_control_de_permisos.md) |
+| **Sistema de Ahorro de Tokens y Autorregeneración** | `skills/control_tokens.py`, `config.json`, `bot_crewai.py`, `server.py` | ✅ Completado | [Ver Documentación](./modulo_ahorro_tokens.md) |
 
 ---
 

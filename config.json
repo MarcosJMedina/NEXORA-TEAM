@@ -6,5 +6,12 @@
     "calendario": {
       "enabled": true
     }
+  },
+  "limite_tokens": {
+    "enabled": true,
+    "max_preguntas": 5,
+    "ventana_minutos": 10,
+    "max_tokens_entrada": 4096,
+    "max_tokens_salida": 1024
   }
 }

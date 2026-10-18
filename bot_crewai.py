@@ -48,13 +48,15 @@ historial_chats = {}
 PROXY_URL = os.getenv("LITELLM_PROXY_URL", "http://litellm-proxy:4000")
 MASTER_KEY = os.getenv("LITELLM_MASTER_KEY", "sk-llave-maestra-universidad")
 MODELO_UNIVERSIDAD = "openai/modelo-universidad"
+MAX_TOKENS_SALIDA = config.get("limite_tokens", {}).get("max_tokens_salida", 1024)
 
-# Nos conectamos a tu infraestructura Docker con temperatura estricta a cero
+# Nos conectamos a tu infraestructura Docker con temperatura estricta a cero y límite estándar de salida
 cerebro_maestro = LLM(
     model=MODELO_UNIVERSIDAD, 
     api_key=MASTER_KEY,
     base_url=PROXY_URL,
-    temperature=0.0
+    temperature=0.0,
+    max_tokens=MAX_TOKENS_SALIDA
 )
 
 # Aliases semánticos para compatibilidad con suites de pruebas unitarias

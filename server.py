@@ -6,6 +6,7 @@ import requests
 # Importamos tu magia de Agentes y tu configuración segura
 from bot_crewai import consultar_oficina
 from skills.utils import URL_LOCAL, TOKEN_LOCAL, CABECERAS
+from skills.control_tokens import gestor_tokens
 
 app = FastAPI()
 
@@ -78,8 +79,17 @@ def chat_endpoint(request: ChatRequest):
             "success": False,
             "response": "Lo siento, pero debes iniciar sesión en Moodle y estar matriculado en esta materia para poder consultarme."
         }
+
+    # 2. PASO DE AHORRO DE TOKENS (LÍMITE POR USUARIO Y AUTORREGENERACIÓN)
+    permitido, mensaje_cuota = gestor_tokens.verificar_y_consumir(request.user_id)
+    if not permitido:
+        print(f"⏳ [CONTROL TOKENS] Usuario ID {request.user_id} alcanzó el límite de consultas.")
+        return {
+            "success": True,
+            "response": mensaje_cuota
+        }
     
-    print("✅ Petición Segura. Despertando a los Agentes...")
+    print("✅ Petición Segura y con Cuota Disponible. Despertando a los Agentes...")
     print(f"==============================================\n")
     
     # 2. PASO DE INTELIGENCIA
