@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+requests
+pymysql
+qdrant-client
+sentence-transformers
+pypdf
+langchain-community
+langchain-text-splitters
+python-dotenv

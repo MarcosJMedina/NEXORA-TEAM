@@ -1,3 +1,17 @@
+# Archivos de entorno y configuración sensible
 .env
 venv/
 config.json
+
+# Archivos temporales e internos de Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Datos persistentes generados por los contenedores de Docker
+mariadb_data/
+qdrant_data/
+
+# Documentos PDF locales de prueba
+moodles_pdfs/*
+!moodles_pdfs/.gitkeep
