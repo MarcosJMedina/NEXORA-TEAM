@@ -4,50 +4,45 @@ import unicodedata
 import requests
 import docx
 import pypdf
-import chromadb
-from chromadb.utils import embedding_functions
 from crewai.tools import tool
 from skills.utils import buscar_id_materia, URL_LOCAL, TOKEN_LOCAL, CABECERAS
 
-# Ruta base del proyecto y carpeta de persistencia de ChromaDB
+# Ruta base del proyecto
 carpeta_principal = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CHROMA_PATH = os.path.join(carpeta_principal, "chroma_data")
 
-# Inicialización diferida (Lazy) del cliente de ChromaDB y función de embedding local
-_cliente_chroma = None
-_embedding_fn = None
-
-
-def obtener_cliente_chroma():
-    """Inicializa o retorna la instancia persistente del cliente ChromaDB."""
-    global _cliente_chroma
-    if _cliente_chroma is None:
-        os.makedirs(CHROMA_PATH, exist_ok=True)
-        _cliente_chroma = chromadb.PersistentClient(path=CHROMA_PATH)
-    return _cliente_chroma
-
-
-def obtener_embedding_function():
-    """
-    Retorna la función de embedding por defecto de ChromaDB (Sentence Transformers / all-MiniLM-L6-v2),
-    operando de forma 100% local sin necesidad de claves de API externas.
-    """
-    global _embedding_fn
-    if _embedding_fn is None:
-        try:
-            _embedding_fn = embedding_functions.DefaultEmbeddingFunction()
-        except Exception as e:
-            print(f"⚠️ [CHROMA] Advertencia al instanciar DefaultEmbeddingFunction: {e}")
-            _embedding_fn = None
-    return _embedding_fn
+# Integración con el motor vectorial Qdrant (reemplazo oficial de ChromaDB)
+try:
+    from vector_qdrant import (
+        inicializar_qdrant,
+        indexar_lote,
+        indexar_texto,
+        buscar_contexto,
+        contar_documentos_materia,
+        recuperar_documentos_archivo,
+        recuperar_primeros_documentos,
+        buscar_puntos_semanticos,
+        COLECCION_NAME,
+        obtener_cliente_qdrant
+    )
+except ImportError:
+    import sys
+    sys.path.append(carpeta_principal)
+    from vector_qdrant import (
+        inicializar_qdrant,
+        indexar_lote,
+        indexar_texto,
+        buscar_contexto,
+        contar_documentos_materia,
+        recuperar_documentos_archivo,
+        recuperar_primeros_documentos,
+        buscar_puntos_semanticos,
+        COLECCION_NAME,
+        obtener_cliente_qdrant
+    )
 
 
 def sanitizar_nombre_coleccion(materia: str) -> str:
-    """
-    ChromaDB exige nombres de colección de 3 a 63 caracteres, únicamente
-    con caracteres alfanuméricos, guiones y guiones bajos [a-zA-Z0-9_-],
-    comenzando y terminando en un alfanumérico.
-    """
+    """Sanitiza nombres de colección para consistencia."""
     texto = unicodedata.normalize('NFKD', str(materia)).encode('ASCII', 'ignore').decode('utf-8').lower()
     limpio = re.sub(r'[^a-z0-9_-]', '_', texto)
     limpio = re.sub(r'_+', '_', limpio).strip('_-')
@@ -59,7 +54,7 @@ def sanitizar_nombre_coleccion(materia: str) -> str:
 
 def dividir_en_chunks(texto: str, chunk_size: int = 800, chunk_overlap: int = 150) -> list[str]:
     """
-    Text Splitter básico con solapamiento (overlap) para mantener la continuidad contextual.
+    Text Splitter con solapamiento (overlap) para mantener la continuidad contextual.
     Intenta cortar preferentemente en saltos de línea o puntos para no cortar oraciones al medio.
     """
     texto = texto.strip()
@@ -197,25 +192,13 @@ def tool_archivos(nombre_materia: str, tema_a_buscar: str) -> str:
 
     print(f"✅ [DEBUG RAG] 2. ID encontrado: {id_materia} con {len(archivos_a_procesar)} archivo(s) válido(s) a procesar.")
 
-    # Inicialización de ChromaDB y Embedding Function
-    cliente = obtener_cliente_chroma()
-    ef = obtener_embedding_function()
-
-    # Nombramos la colección basándonos en el id_materia (representa a la MATERIA COMPLETA)
-    nombre_col = sanitizar_nombre_coleccion(str(id_materia))
-
-    if ef:
-        coleccion = cliente.get_or_create_collection(name=nombre_col, embedding_function=ef)
-    else:
-        coleccion = cliente.get_or_create_collection(name=nombre_col)
-
+    # Conteo de puntos existentes en Qdrant para esta materia
+    cant_puntos = contar_documentos_materia(id_materia)
     texto_extraido = ""
 
-    # Si la colección está vacía (count() == 0), iteramos sobre archivos_a_procesar,
-    # descargamos cada uno, extraemos el texto, dividimos en chunks y hacemos upsert acumulando los datos
-    if coleccion.count() == 0:
+    # Si la materia no tiene fragmentos en Qdrant, descargamos y procesamos
+    if cant_puntos == 0:
         todos_los_chunks = []
-        todos_los_ids = []
         todos_los_metadatas = []
 
         for arch_idx, arch in enumerate(archivos_a_procesar):
@@ -257,31 +240,26 @@ def tool_archivos(nombre_materia: str, tema_a_buscar: str) -> str:
                     texto_extraido += f"\n--- [{nombre_archivo}] ---\n" + texto_archivo
                     chunks_arch = dividir_en_chunks(texto_archivo, chunk_size=800, chunk_overlap=150)
                     for c_i, ch in enumerate(chunks_arch):
-                        chunk_id = f"materia_{id_materia}_doc_{arch_idx}_chunk_{c_i}"
-                        todos_los_ids.append(chunk_id)
                         todos_los_chunks.append(ch)
                         todos_los_metadatas.append({
                             "materia": nombre_materia,
                             "id_materia": id_materia,
                             "archivo": nombre_archivo,
-                            "chunk": c_i
+                            "chunk": c_i,
+                            "fuente": nombre_archivo
                         })
             except Exception as e:
                 print(f"⚠️ [DEBUG RAG] Error procesando archivo {nombre_archivo}: {e}")
                 continue
 
-        if todos_los_chunks and coleccion:
+        if todos_los_chunks:
             try:
-                coleccion.upsert(
-                    documents=todos_los_chunks,
-                    ids=todos_los_ids,
-                    metadatas=todos_los_metadatas
-                )
-                print(f"✅ [CHROMA] Guardados {len(todos_los_chunks)} fragmentos vectoriales de {len(archivos_a_procesar)} archivo(s) en '{nombre_col}'.")
+                indexar_lote(todos_los_chunks, todos_los_metadatas)
+                print(f"✅ [QDRANT] Guardados {len(todos_los_chunks)} fragmentos vectoriales de {len(archivos_a_procesar)} archivo(s) en '{COLECCION_NAME}'.")
             except Exception as e:
-                print(f"⚠️ [CHROMA] Error al insertar en ChromaDB: {e}")
+                print(f"⚠️ [QDRANT] Error al insertar en Qdrant: {e}")
     else:
-        print(f"⚡ [CACHE CHROMA] Colección '{nombre_col}' encontrada en disco con {coleccion.count()} fragmentos. Omitiendo descarga...")
+        print(f"⚡ [CACHE QDRANT] Materia '{nombre_materia}' encontrada en Qdrant con {cant_puntos} fragmentos. Omitiendo descarga...")
 
     # =========================================================================
     # DETECCIÓN DE DOCUMENTO ESPECÍFICO SOLICITADO POR EL ALUMNO
@@ -314,30 +292,24 @@ def tool_archivos(nombre_materia: str, tema_a_buscar: str) -> str:
                 archivo_detectado = arch['nombre']
                 break
 
-    # Si se detectó un archivo específico, recuperamos directamente sus fragmentos
-    if archivo_detectado and coleccion:
-        print(f"🎯 [RAG CHROMA] Documento específico detectado para consulta: '{archivo_detectado}'")
+    # Si se detectó un archivo específico, recuperamos sus fragmentos desde Qdrant
+    if archivo_detectado:
+        print(f"🎯 [RAG QDRANT] Documento específico detectado para consulta: '{archivo_detectado}'")
         try:
-            datos_archivo = coleccion.get(where={"archivo": archivo_detectado}, limit=6)
-            docs_arch = datos_archivo.get('documents', [])
+            docs_arch = recuperar_documentos_archivo(archivo_detectado, limite=6)
             if docs_arch:
                 es_consulta_puntual = not any(k in tema_lower for k in ["resumen", "explicar", "explica", "de que trata", "sintesis"]) and tema_lower != archivo_detectado.lower()
                 if es_consulta_puntual and len(docs_arch) > 3:
-                    consulta_arch = coleccion.query(
-                        query_texts=[tema_a_buscar],
-                        where={"archivo": archivo_detectado},
-                        n_results=min(4, len(docs_arch))
-                    )
-                    frags_arch = consulta_arch.get('documents', [[]])[0]
+                    frags_arch = buscar_contexto(pregunta=tema_a_buscar, limite=min(4, len(docs_arch)), archivo=archivo_detectado)
                     if frags_arch:
-                        return f"[EXTRACTO DEL DOCUMENTO '{archivo_detectado}' (Materia: {nombre_materia})]:\n" + "\n\n---\n\n".join(frags_arch)
+                        return f"[EXTRACTO DEL DOCUMENTO '{archivo_detectado}' (Materia: {nombre_materia})]:\n{frags_arch}"
 
                 return f"[CONTENIDO DEL DOCUMENTO '{archivo_detectado}' (Materia: {nombre_materia})]:\n" + "\n\n---\n\n".join(docs_arch)
         except Exception as e:
-            print(f"⚠️ [RAG CHROMA] Error al consultar archivo específico en ChromaDB: {e}")
+            print(f"⚠️ [RAG QDRANT] Error al consultar archivo específico en Qdrant: {e}")
 
     # REGLA 5: PLAN B y Anti-Alucinaciones
-    total_docs = coleccion.count() if coleccion else 0
+    total_docs = contar_documentos_materia(id_materia)
     if total_docs == 0:
         if texto_extraido:
             return f"[APUNTE DE {nombre_materia}]:\n" + texto_extraido[:4000]
@@ -353,54 +325,49 @@ def tool_archivos(nombre_materia: str, tema_a_buscar: str) -> str:
     )
 
     if es_resumen:
-        print(f"📖 [RAG ChromaDB] Resumen general solicitado. Recuperando primeros fragmentos...")
-        datos_primeros = coleccion.get(limit=k)
-        docs = datos_primeros.get('documents', [])
+        print(f"📖 [RAG Qdrant] Resumen general solicitado. Recuperando primeros fragmentos...")
+        docs = recuperar_primeros_documentos(id_materia=id_materia, limite=k)
         if docs:
             return f"[APUNTE DE {nombre_materia}]:\n" + "\n\n---\n\n".join(docs)
         if texto_extraido:
             return f"[APUNTE DE {nombre_materia}]:\n" + texto_extraido[:4000]
         return f"No se pudo extraer contenido para el resumen de {nombre_materia}."
 
-    print(f"🔍 [RAG ChromaDB] Buscando semánticamente: '{tema_a_buscar}' en '{nombre_materia}'...")
+    print(f"🔍 [RAG Qdrant] Buscando semánticamente: '{tema_a_buscar}' en '{nombre_materia}'...")
     try:
-        consulta = coleccion.query(
-            query_texts=[tema_a_buscar],
-            n_results=k
-        )
+        resultados_sem = buscar_puntos_semanticos(pregunta=tema_a_buscar, limite=k, id_materia=id_materia)
 
-        fragmentos = consulta.get('documents', [[]])[0]
-        distancias = consulta.get('distances', [[]])[0] if 'distances' in consulta and consulta['distances'] else []
-        metas = consulta.get('metadatas', [[]])[0] if 'metadatas' in consulta else []
-
-        if not fragmentos:
+        if not resultados_sem:
             if texto_extraido:
                 return f"[APUNTE DE {nombre_materia}]:\n" + texto_extraido[:4000]
             return f"Leí el archivo de {nombre_materia} pero no encontré menciones exactas sobre ese tema."
 
         fragmentos_relevantes = []
-        for i, doc in enumerate(fragmentos):
-            if distancias and i < len(distancias) and distancias[i] > 2.0:
-                continue
-            nombre_origen = metas[i].get('archivo', '') if i < len(metas) else ''
+        for r in resultados_sem:
+            doc_texto = r.get("texto", "")
+            nombre_origen = r.get("archivo", "")
             prefijo = f"📄 [Archivo: {nombre_origen}]\n" if nombre_origen else ""
-            fragmentos_relevantes.append(f"{prefijo}{doc}")
+            if r.get("score", 1.0) >= 0.2:
+                fragmentos_relevantes.append(f"{prefijo}{doc_texto}")
 
-        # Si el filtro estricto descartó todo pero ChromaDB trajo resultados, los aprovechamos
-        if not fragmentos_relevantes and fragmentos:
-            for i, f in enumerate(fragmentos):
-                nombre_origen = metas[i].get('archivo', '') if i < len(metas) else ''
+        # Si el filtro de score descartó todo pero Qdrant trajo resultados, los aprovechamos
+        if not fragmentos_relevantes and resultados_sem:
+            for r in resultados_sem:
+                doc_texto = r.get("texto", "")
+                nombre_origen = r.get("archivo", "")
                 prefijo = f"📄 [Archivo: {nombre_origen}]\n" if nombre_origen else ""
-                fragmentos_relevantes.append(f"{prefijo}{f}")
+                fragmentos_relevantes.append(f"{prefijo}{doc_texto}")
 
         if not fragmentos_relevantes:
             if texto_extraido:
                 return f"[APUNTE DE {nombre_materia}]:\n" + texto_extraido[:4000]
-            print(f"⚠️ [RAG ChromaDB] Ningún fragmento superó el umbral de similitud.")
+            print(f"⚠️ [RAG Qdrant] Ningún fragmento superó el umbral de similitud.")
             return f"Leí el archivo de {nombre_materia} pero no encontré menciones exactas sobre ese tema."
 
         return f"[RESULTADO RAG DE {nombre_materia}]:\n" + "\n\n---\n\n".join(fragmentos_relevantes)
 
     except Exception as e:
         print(f"❌ [RAG ERROR]: {e}")
+        if texto_extraido:
+            return f"[APUNTE DE {nombre_materia}]:\n" + texto_extraido[:4000]
         return f"Error en la consulta vectorial: {e}"

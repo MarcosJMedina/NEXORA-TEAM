@@ -114,3 +114,46 @@ if "crewai" not in sys.modules or not hasattr(sys.modules["crewai"], "LLM"):
     chromadb_embed.DefaultEmbeddingFunction = lambda *args, **kwargs: MagicMock()
     sys.modules["chromadb.utils"] = chromadb_utils
     sys.modules["chromadb.utils.embedding_functions"] = chromadb_embed
+
+    # Mock para qdrant_client en tests unitarios aislados
+    if "qdrant_client" not in sys.modules:
+        qdrant_mock = types.ModuleType("qdrant_client")
+        class MockQdrantClient:
+            def __init__(self, *args, **kwargs): pass
+            def get_collections(self):
+                mock_res = MagicMock()
+                mock_res.collections = []
+                return mock_res
+            def create_collection(self, *args, **kwargs): pass
+            def upsert(self, *args, **kwargs): pass
+            def search(self, *args, **kwargs): return []
+            def count(self, *args, **kwargs):
+                mock_res = MagicMock()
+                mock_res.count = 0
+                return mock_res
+            def scroll(self, *args, **kwargs): return ([], None)
+        qdrant_mock.QdrantClient = MockQdrantClient
+        sys.modules["qdrant_client"] = qdrant_mock
+
+        qdrant_models = types.ModuleType("qdrant_client.models")
+        class MockModel:
+            def __init__(self, *args, **kwargs): pass
+        qdrant_models.Distance = MagicMock()
+        qdrant_models.VectorParams = MockModel
+        qdrant_models.PointStruct = MockModel
+        qdrant_models.Filter = MockModel
+        qdrant_models.FieldCondition = MockModel
+        qdrant_models.MatchValue = MockModel
+        sys.modules["qdrant_client.models"] = qdrant_models
+
+    if "sentence_transformers" not in sys.modules:
+        st_mock = types.ModuleType("sentence_transformers")
+        class MockSentenceTransformer:
+            def __init__(self, *args, **kwargs): pass
+            def encode(self, texts, *args, **kwargs):
+                if isinstance(texts, list):
+                    return [[0.0] * 384 for _ in texts]
+                return [0.0] * 384
+        st_mock.SentenceTransformer = MockSentenceTransformer
+        sys.modules["sentence_transformers"] = st_mock
+

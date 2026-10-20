@@ -8,5 +8,6 @@ requests
 python-docx
 pypdf
 litellm
-chromadb
+qdrant-client
 sentence-transformers
+langchain-text-splitters
